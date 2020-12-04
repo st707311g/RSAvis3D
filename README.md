@@ -1,1 +1,1 @@
-# RSAvis3D
+# [High-throughput three-dimensional visualization of root system architecture of rice using X-ray computed tomography](https://doi.org/10.1186/s13007-020-00612-6)
