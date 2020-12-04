@@ -1,6 +1,9 @@
-MIT License
+RSAtrace3D is dual licensed under the MIT license and a commercial license. 
+For academic use, RSAtrace3D is under the MIT license. Otherwise, RSAtrace3D 
+is under the commercial license.
 
-Copyright (c) 2020 TERAMOTO, Shota
+The MIT License:
+Copyright (c) National Agriculture and Food Research Organization(2020)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +22,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+The commercial license:
+Please contact the National Agriculture and Food Research Organization.
