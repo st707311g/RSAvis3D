@@ -47,7 +47,7 @@ Basic usage of RSAvis3D is
 
     $ python RSAtrace3D -i INDIR
 
-Parameters of RSAvis3D is modifiable by `-b`, `-m`, `-e`, and `-c` commands. If omitted, the parameters considered conditional on [the paper](https://doi.org/10.1186/s13007-020-00612-6) will be used.
+Parameters of RSAvis3D are modifiable by `-b`, `-m`, `-e`, and `-c` commands. If omitted, the parameters considered conditional on [the paper](https://doi.org/10.1186/s13007-020-00612-6) will be used.
 
 ## Demonstration data analysis
 
