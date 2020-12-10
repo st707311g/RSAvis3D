@@ -2,6 +2,10 @@
 
 RSAvis3D is the Python program for root segmentation from X-ray CT images. RSAvis3D uses a 3-D median filter and edge detection algorithm to isolate root segments. 
 
+## Copyright
+
+National Agriculture and Food Research Organization (2020)
+
 ## Installation
 
     $ git clone https://github.com/st707311g/RSAvis3D.git
