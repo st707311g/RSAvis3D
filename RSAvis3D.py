@@ -19,11 +19,6 @@ def tqdm_multiprocessing(fun, l):
 class RSAvis3D(object):
     def __init__(self):
         super().__init__()
-        self.stack = None
-        self.outdir = None
-        self.peak_air = None
-        self.peak_soil = None
-        self.diff = None
         self.__indir: Union[str, None] = None
         self.__volume: Union[np.ndarray, None] = None
         self.__mask: Union[np.ndarray, None] = None
