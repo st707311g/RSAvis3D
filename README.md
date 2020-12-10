@@ -8,3 +8,14 @@ If you use this code or modified ones, please cite our work: Shota Teramoto et a
 
 ## Installation
     $ git clone https://github.com/st707311g/RSAvis3D.git
+
+RSAvis3D requires Python (version > 3.6). Check it by the following command:
+
+    $ python --version
+
+After confirmation, install required modules:
+
+    $ pip install --upgrade pip
+    $ pip install -r RSAvis3D/requirements.txt
+
+pyenv virtualenv 3.6.4 mypyenv
