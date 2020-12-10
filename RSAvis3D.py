@@ -186,3 +186,8 @@ class RSAvis3D(object):
             img = exposure.rescale_intensity(img, in_range=(0,255), out_range=(0,255)).astype(np.uint8)
             out_fname = os.path.join(outdir, f'img{str(i).zfill(4)}.{format}')
             io.imsave(out_fname, img)
+
+        for i in range(3):
+            img = np_volume.max(axis=i)
+            img = exposure.rescale_intensity(img, in_range=(0,255), out_range=(0,255)).astype(np.uint8)
+            io.imsave(outdir+f'_{i}.png', img)

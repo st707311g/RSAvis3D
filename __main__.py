@@ -62,8 +62,7 @@ if __name__ == '__main__':
             print(f'Cannnot find the directory: {indir}')
             continue
 
-        if (outdir:=args.outdir) is None:
-            outdir = indir+'_RSA'
+        outdir = indir+'_RSA'
 
         if not args.overwrite:
             if os.path.isdir(outdir):

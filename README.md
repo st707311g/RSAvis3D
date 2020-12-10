@@ -47,7 +47,7 @@ Basic usage of RSAvis3D is
 
     $ python RSAtrace3D -i INDIR
 
-## Demonstration
+## Demonstration data analysis
 
 Download and unzip the demo data archive.
 
@@ -78,6 +78,9 @@ Then, one directory and three image files appear.
     DAS_09  DAS_13  DAS_17  DAS_21  DAS_25  DAS_27_RSA_0.png
     DAS_10  DAS_14  DAS_18  DAS_22  DAS_26  DAS_27_RSA_1.png
 
-The image processed image files are saved in *rice_root_daily_growth/DAS_27_RSA*.
+The image processed image files are saved in *rice_root_daily_growth/DAS_27_RSA*. Parallel projections along three axis are *DAS_27_RSA_0.png*, *DAS_27_RSA_1.png*, and *DAS_27_RSA_2.png*.
 
 <img src="figures/DAS_27_RSA_0.png" width=30% height=30% title="DAS_27_RSA_0.png"> <img src="figures/DAS_27_RSA_1.png" width=30% height=30% title="DAS_27_RSA_1.png"> <img src="figures/DAS_27_RSA_2.png" width=30% height=30% title="DAS_27_RSA_2.png">
+
+## Project homepage
+https://rootomics.dna.affrc.go.jp/en/
