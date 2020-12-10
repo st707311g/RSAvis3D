@@ -2,10 +2,6 @@
 
 RSAvis3D is the Python program for root segmentation from X-ray CT images. RSAvis3D uses a 3-D median filter and edge detection algorithm to isolate root segments. 
 
-## Citation
-
-If you use this code or modified ones, please cite our work: Shota Teramoto et al. (2020) [High-throughput three-dimensional visualization of root system architecture of rice using X-ray computed tomography.](https://doi.org/10.1186/s13007-020-00612-6) 
-
 ## Installation
 
     $ git clone https://github.com/st707311g/RSAvis3D.git
@@ -62,7 +58,7 @@ There are 21 directories and 1 files in *rice_root_daily_growth*.
     DAS_08  DAS_11  DAS_14  DAS_17  DAS_20  DAS_23  DAS_26
     DAS_09  DAS_12  DAS_15  DAS_18  DAS_21  DAS_24  DAS_27
 
-Let't try one CT data, *rice_root_daily_growth/DAS_27*.
+Let's try one CT data, *rice_root_daily_growth/DAS_27*.
 
     $ python RSAvis3D -i rice_root_daily_growth/DAS_27
 
@@ -81,6 +77,10 @@ Then, one directory and three image files appear.
 The image processed image files are saved in *rice_root_daily_growth/DAS_27_RSA*. Parallel projections along three axis are *DAS_27_RSA_0.png*, *DAS_27_RSA_1.png*, and *DAS_27_RSA_2.png*.
 
 <img src="figures/DAS_27_RSA_0.png" width=30% height=30% title="DAS_27_RSA_0.png"> <img src="figures/DAS_27_RSA_1.png" width=30% height=30% title="DAS_27_RSA_1.png"> <img src="figures/DAS_27_RSA_2.png" width=30% height=30% title="DAS_27_RSA_2.png">
+
+## Citation
+
+If you use this code or modified ones, please cite our work: Shota Teramoto et al. (2020) [High-throughput three-dimensional visualization of root system architecture of rice using X-ray computed tomography.](https://doi.org/10.1186/s13007-020-00612-6) 
 
 ## Project homepage
 https://rootomics.dna.affrc.go.jp/en/
