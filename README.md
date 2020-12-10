@@ -55,10 +55,29 @@ Download and unzip the demo data archive.
     $ unzip rice_root_daily_growth.zip
     $ rm rice_root_daily_growth.zip
 
-There are 21 directories and 1 files in `rice_root_daily_growth`.
+There are 21 directories and 1 files in *rice_root_daily_growth*.
 
     $ ls rice_root_daily_growth
     DAS_07  DAS_10  DAS_13  DAS_16  DAS_19  DAS_22  DAS_25  description.docx
     DAS_08  DAS_11  DAS_14  DAS_17  DAS_20  DAS_23  DAS_26
     DAS_09  DAS_12  DAS_15  DAS_18  DAS_21  DAS_24  DAS_27
 
+Let't try one CT data, *rice_root_daily_growth/DAS_27*.
+
+    $ python RSAvis3D -i rice_root_daily_growth/DAS_27
+
+If your PC has enough memory space, alternatively the following command well works.
+
+    $ python RSAvis3D -i rice_root_daily_growth/DAS_27 -a
+
+Then, one directory and three image files appear.
+
+    $ ls rice_root_daily_growth
+    DAS_07  DAS_11  DAS_15  DAS_19  DAS_23  DAS_27            DAS_27_RSA_2.png
+    DAS_08  DAS_12  DAS_16  DAS_20  DAS_24  DAS_27_RSA        description.docx
+    DAS_09  DAS_13  DAS_17  DAS_21  DAS_25  DAS_27_RSA_0.png
+    DAS_10  DAS_14  DAS_18  DAS_22  DAS_26  DAS_27_RSA_1.png
+
+The image processed image files are saved in *rice_root_daily_growth/DAS_27_RSA*.
+
+<img src="figures/DAS_27_RSA_0.png" width=30% height=30% title="DAS_27_RSA_0.png"> <img src="figures/DAS_27_RSA_1.png" width=30% height=30% title="DAS_27_RSA_1.png"> <img src="figures/DAS_27_RSA_2.png" width=30% height=30% title="DAS_27_RSA_2.png">
