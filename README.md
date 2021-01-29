@@ -100,3 +100,4 @@ https://rootomics.dna.affrc.go.jp/en/
 
 * version 1.0 (Dec 10th, 2020)
   * Initial version uploaded
+  * README.md updated (Jan 29th, 2021)
