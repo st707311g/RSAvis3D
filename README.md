@@ -1,5 +1,11 @@
 # RSAvis3D: An robust and rapid image processing for root segmentation from X-ray CT images
 
+
+![python](https://img.shields.io/badge/Python->3.8-lightgreen)
+![developed_by](https://img.shields.io/badge/developed%20by-Shota_Teramoto-lightgreen)
+![version](https://img.shields.io/badge/version-1.0-lightgreen)
+![last_updated](https://img.shields.io/badge/last_update-July_3,_2021-lightgreen)
+
 ![top image](figures/top_image.jpg) 
 
 RSAvis3D is the Python program for root segmentation from X-ray CT images. RSAvis3D uses a 3D median filter and edge detection algorithm to isolate root segments. 
@@ -95,6 +101,10 @@ National Agriculture and Food Research Organization (2020)
 
 ## Project homepage
 https://rootomics.dna.affrc.go.jp/en/
+
+## version policy
+
+Version information consists of major and minor versions (major.minor). When the major version increases by one, it is no longer compatible with the original version.When the minor version invreases by one, compatibility will be maintained. Revisions that do not affect functionality, such as bug fixes and design changes, will not affect the version number.
 
 ## Update history
 
