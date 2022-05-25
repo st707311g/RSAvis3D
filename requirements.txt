@@ -1,4 +1,5 @@
-tqdm
-numpy
+coloredlogs
+Pillow
 scikit-image
+tqdm
 opencv-python
