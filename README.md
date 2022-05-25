@@ -114,7 +114,7 @@ ls -a rice_root_daily_growth_intensity_normalized/.segmentated
 Projection images are saved in `.projection0`, `.projection1`, and `.projection2` directory. Animation gif files are saved as `.projection0.gif `, `.projection1.gif`, and `.projection2.gif`.
 
 
-<img src="figures/.projection0.gif" width=30% height=30% title=".projection0.gif"> <img src="figures/.projection1.gif" width=30% height=30% title=".projection1.gif"><img src="figures/.projection2.gif" width=30% height=30% title=".projection2.gif">
+<img src="figures/.projection0.gif" width=60% height=60% title=".projection0.gif"> <img src="figures/.projection1.gif" width=60% height=60% title=".projection1.gif"><img src="figures/.projection2.gif" width=60% height=60% title=".projection2.gif">
 
 ## version policy
 
