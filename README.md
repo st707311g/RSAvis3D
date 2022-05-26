@@ -96,7 +96,7 @@ If you want to obtain RSA segments, please specify the target directory.
 python . -s rice_root_daily_growth_intensity_normalized
 ```
 
-Alternatively,, if your PC has enough memory space, alternatively the following command well works.
+Alternatively, if your PC has enough memory space, alternatively the following command well works.
 ```
 python . -s rice_root_daily_growth_intensity_normalized -a
 ```
