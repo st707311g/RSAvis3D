@@ -4,7 +4,7 @@
 ![python](https://img.shields.io/badge/Python-3.8.12-lightgreen)
 ![developed_by](https://img.shields.io/badge/developed%20by-Shota_Teramoto-lightgreen)
 ![version](https://img.shields.io/badge/version-1.1-lightgreen)
-![last_updated](https://img.shields.io/badge/last_update-May_25,_2022-lightgreen)
+![last_updated](https://img.shields.io/badge/last_update-June_1,_2022-lightgreen)
 
 ![top image](figures/top_image.jpg) 
 
@@ -14,7 +14,7 @@ RSAvis3D is the Python program for root segmentation from X-ray CT images. RSAvi
 
 This software is confirmed to work with Python 3.8.12 on Ubuntu 20.04. I recommend creating a virtual environment for python 3.8.12 with `virtualenv`.
 
-## Installation
+## installation
 
 Run the following commands:
 
@@ -41,7 +41,7 @@ Please check if CuPy is available by using the following command.
 python is_cupy_available.py
 ```
 
-## How to run
+## how to run
 
 ```
     python . [-h] [-s SOURCE] [-b BLOCK_SIZE] [-a] [-m MEDIAN_KERNEL_SIZE]
@@ -96,7 +96,7 @@ If you want to obtain RSA segments, please specify the target directory.
 python . -s rice_root_daily_growth_intensity_normalized
 ```
 
-Alternatively, if your PC has enough memory space, alternatively the following command well works.
+Alternatively, if your PC has enough memory space, the following command well works.
 ```
 python . -s rice_root_daily_growth_intensity_normalized -a
 ```
@@ -147,13 +147,14 @@ Copyright (C) 2020 National Agriculture and Food Research Organization. All righ
 ## project homepage
 https://rootomics.dna.affrc.go.jp/en/
 
-## Update history
+## update history
 
 * version 1.0 (Dec 10, 2020)
   * Initial version uploaded
   * README.md updated (Jan 29th, 2021)
 
 * version 1.1 (May 25, 2022)
-  * GPU Support
-  * License Change (NARO NON-COMMERCIAL LICENSE AGREEMENT Version 1.0)
+  * GPU support
+  * License change (NARO NON-COMMERCIAL LICENSE AGREEMENT Version 1.0)
   * Rewrote the code for python 3.8.12
+  * fix: typo (June 1, 2022)
