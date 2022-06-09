@@ -4,7 +4,7 @@
 ![python](https://img.shields.io/badge/Python-3.8.12-lightgreen)
 ![developed_by](https://img.shields.io/badge/developed%20by-Shota_Teramoto-lightgreen)
 ![version](https://img.shields.io/badge/version-1.1-lightgreen)
-![last_updated](https://img.shields.io/badge/last_update-June_1,_2022-lightgreen)
+![last_updated](https://img.shields.io/badge/last_update-June_9,_2022-lightgreen)
 
 ![top image](figures/top_image.jpg) 
 
@@ -72,6 +72,8 @@ Basic usage of RSAvis3D is
     $ python . -s SOURCE
 
 Parameters of RSAvis3D are modifiable by `-b`, `-m`, `-e`, and `-c` commands. If omitted, the parameters considered conditional on [the paper](https://doi.org/10.1186/s13007-020-00612-6) will be used.
+
+The intensity factor is proportional to the signal intensity of the output images. If the image is saturated, reduce the intensity factor. The default is 10.
 
 ## demonstration
 
@@ -159,3 +161,5 @@ https://rootomics.dna.affrc.go.jp/en/
   * License change (NARO NON-COMMERCIAL LICENSE AGREEMENT Version 1.0)
   * Rewrote the code for python 3.8.12
   * fix: typo (June 1, 2022)
+  * fix: warning messages ignored (June 9, 2022)
+  * add: README.md - an explanation of the intensity factor (June 9, 2022)

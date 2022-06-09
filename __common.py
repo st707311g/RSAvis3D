@@ -1,7 +1,10 @@
 import logging
+import warnings
 from typing import Final
 
 import tqdm as tqdm_
+
+warnings.filterwarnings('ignore')
 
 AUTHOR: Final[str] = 'Shota Teramoto'
 COPYRIGHT: Final[str] = '2020 National Agriculture and Food Research Organization. All rights reserved.'
