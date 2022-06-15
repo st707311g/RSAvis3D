@@ -3,8 +3,8 @@
 
 ![python](https://img.shields.io/badge/Python-3.8.12-lightgreen)
 ![developed_by](https://img.shields.io/badge/developed%20by-Shota_Teramoto-lightgreen)
-![version](https://img.shields.io/badge/version-1.1-lightgreen)
-![last_updated](https://img.shields.io/badge/last_update-June_9,_2022-lightgreen)
+![version](https://img.shields.io/badge/version-1.2-lightgreen)
+![last_updated](https://img.shields.io/badge/last_update-June_15,_2022-lightgreen)
 
 ![top image](figures/top_image.jpg) 
 
@@ -60,7 +60,8 @@ python is_cupy_available.py
         -e EDGE_SIZE, --edge_size EDGE_SIZE
                                 Indicate blur kernel size for edge detection (>= 1)
         -c CYLINDER_RADIUS, --cylinder_radius CYLINDER_RADIUS
-                                Indicate cylinder mask radius (>= 64)
+                                Indicate cylinder mask radius (>= 64). If 0, masking
+                                process will be skipped.
         -f {png,tif,jpg}, --format {png,tif,jpg}
                                 Indicate file format type
         -i INTENSITY_FACTOR, --intensity_factor INTENSITY_FACTOR
@@ -149,7 +150,6 @@ Copyright (C) 2020 National Agriculture and Food Research Organization. All righ
 ## project homepage
 https://rootomics.dna.affrc.go.jp/en/
 
-
 ## update history
 
 * version 1.0 (Dec 10, 2020)
@@ -163,3 +163,6 @@ https://rootomics.dna.affrc.go.jp/en/
   * fix: typo (June 1, 2022)
   * fix: warning messages ignored (June 9, 2022)
   * add: README.md - an explanation of the intensity factor (June 9, 2022)
+
+* version 1.2 (June 15, 2022)
+  * Added option of no mask processing

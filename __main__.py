@@ -28,7 +28,7 @@ class RSAvis3D_Parameters(object):
         assert self.block_size >= 64
         assert self.median_kernel_size > 0
         assert self.edge_size > 0
-        assert self.cylinder_radius >= 64
+        assert self.cylinder_radius >= 64 or self.cylinder_radius == 0
         assert self.intensity_factor > 0
 
 if __name__ == '__main__':
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--all_at_once', action='store_true', help='Perform all-at-onec processing')
     parser.add_argument('-m', '--median_kernel_size', type=int, default=7, help='Indicate median kernel size (>= 1)')
     parser.add_argument('-e', '--edge_size', type=int, default=21, help='Indicate blur kernel size for edge detection (>= 1)')
-    parser.add_argument('-c', '--cylinder_radius', type=int, default=300, help='Indicate cylinder mask radius (>= 64)')
+    parser.add_argument('-c', '--cylinder_radius', type=int, default=300, help='Indicate cylinder mask radius (>= 64). If 0, masking process will be skipped.')
     parser.add_argument('-f', '--format', type=str, choices=("png", "tif", "jpg"), default = "jpg", help='Indicate file format type')
     parser.add_argument('-i', '--intensity_factor', type=int, default = 10, help='Indicate intensity factor (>0)')
 
@@ -82,12 +82,14 @@ if __name__ == '__main__':
         
         np_volume = VolumeLoader(target_volume_path).load()
         rsavis3d = RSAvis3D(np_volume=np_volume)
-        rsavis3d.make_sylinder_mask(radius=rsavis3d_params.cylinder_radius)
-        rsavis3d.trim_with_mask(padding=rsavis3d_params.median_kernel_size//2)
+        if rsavis3d_params.cylinder_radius != 0:
+            rsavis3d.make_sylinder_mask(radius=rsavis3d_params.cylinder_radius)
+            rsavis3d.trim_with_mask(padding=rsavis3d_params.median_kernel_size//2)
         rsavis3d.apply_median3d(median_kernel_size=rsavis3d_params.median_kernel_size, all_at_once=rsavis3d_params.all_at_once)
         rsavis3d.invert()
         rsavis3d.detect_edge(intensity_factor=rsavis3d_params.intensity_factor)
-        rsavis3d.apply_mask()
+        if rsavis3d_params.cylinder_radius != 0:
+            rsavis3d.apply_mask()
 
         np_volume = rsavis3d.get_np_volume()
         VolumeSaver(

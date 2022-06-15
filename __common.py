@@ -9,7 +9,7 @@ warnings.filterwarnings('ignore')
 AUTHOR: Final[str] = 'Shota Teramoto'
 COPYRIGHT: Final[str] = '2020 National Agriculture and Food Research Organization. All rights reserved.'
 PROGRAM_NAME: Final[str] = 'RSAvis3D'
-VERSION: Final[str] = '1.1'
+VERSION: Final[str] = '1.2'
 DESCRIPTION: Final[str] = f'{PROGRAM_NAME} (Version {VERSION}) Author: {AUTHOR}. Copyright (C) {COPYRIGHT}'
 
 REGISTRATED_DESTINATION: Final[str] = '.registrated'
