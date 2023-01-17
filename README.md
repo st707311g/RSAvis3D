@@ -3,7 +3,7 @@
 
 ![python](https://img.shields.io/badge/Python-3.8.12-lightgreen)
 ![developed_by](https://img.shields.io/badge/developed%20by-Shota_Teramoto-lightgreen)
-![version](https://img.shields.io/badge/version-1.4-lightgreen)
+![version](https://img.shields.io/badge/version-1.5-lightgreen)
 ![last_updated](https://img.shields.io/badge/last_update-January_17,_2023-lightgreen)
 
 ![top image](figures/top_image.jpg)
@@ -45,7 +45,7 @@ python is_cupy_available.py
 
 ```
 usage: . [-h] [-s SRC] [-d DST] [-b BLOCK_SIZE] [-a] [-m MEDIAN_KERNEL_SIZE] [-e EDGE_SIZE] [-c CYLINDER_RADIUS] [-f {png,tif,jpg}]
-         [-i INTENSITY_FACTOR] [--mm_resolution MM_RESOLUTION] [--depth DEPTH] [--save_projection]
+         [-i INTENSITY_FACTOR] [--mm_resolution MM_RESOLUTION] [--depth DEPTH] [--save_projection] [--using_gpu_number USING_GPU_NUMBER]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -68,7 +68,8 @@ optional arguments:
                         spatial resolution [mm].
   --depth DEPTH         depth of the maximum level to be explored. Defaults to unlimited.
   --save_projection     save projection images.
-
+  --using_gpu_number USING_GPU_NUMBER
+                        GPU number used for computing (>1)
 ```
 
 Basic usage of RSAvis3D is
@@ -106,6 +107,13 @@ Alternatively, if your PC has enough memory space, the following command well wo
 ```
 python . -s rice_root_daily_growth_intensity_normalized -a --save_projection
 ```
+
+if your PC has multi-GPUs, the following command well works. For example, GPU number is 3:
+```
+python . -s rice_root_daily_growth_intensity_normalized -a --save_projection --using_gpu_number 3
+```
+
+Using three GPUs (NVIDIA GeForce RTX 3090), we were able to process 21 CT volume files in 5 minutes.
 
 Processed files are saved in the *rice_root_daily_growth_intensity_normalized_rsavis3d* directory.
 
@@ -147,3 +155,6 @@ https://rootomics.dna.affrc.go.jp/en/
 
 * version 1.4 (January 17, 2023)
   * loading, image processing, and saving are parallelized.
+
+* version 1.5 (January 17, 2023)
+  * multi-gpu processing supported.
