@@ -71,11 +71,6 @@ if __name__ == "__main__":
     mm_resolution = float(args.mm_resolution)
     depth = int(args.depth)
 
-    if depth < 0:
-        arg_depth = {}
-    else:
-        arg_depth = {"depth": depth}
-
     volume_loading_queue = Queue()
     volume_loading_process = Process(
         target=volume_loading_func,
@@ -101,6 +96,9 @@ if __name__ == "__main__":
 
         relative_path = volume_path.relative_to(root_src_dir)
         np_volume = normalize_intensity(np_volume, relative_path, logger)
+
+        if mm_resolution != 0:
+            volume_info.update({"mm_resolution": mm_resolution})
 
         while volume_saving_queue.qsize() == 1:
             pass

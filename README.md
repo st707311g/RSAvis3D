@@ -3,7 +3,7 @@
 
 ![python](https://img.shields.io/badge/Python-3.8.12-lightgreen)
 ![developed_by](https://img.shields.io/badge/developed%20by-Shota_Teramoto-lightgreen)
-![version](https://img.shields.io/badge/version-1.3-lightgreen)
+![version](https://img.shields.io/badge/version-1.4-lightgreen)
 ![last_updated](https://img.shields.io/badge/last_update-January_17,_2023-lightgreen)
 
 ![top image](figures/top_image.jpg)
@@ -44,28 +44,31 @@ python is_cupy_available.py
 ## how to run
 
 ```
-    python . [-h] [-s SOURCE] [-b BLOCK_SIZE] [-a] [-m MEDIAN_KERNEL_SIZE]
-         [-e EDGE_SIZE] [-c CYLINDER_RADIUS] [-f {png,tif,jpg}]
-         [-i INTENSITY_FACTOR]
+usage: . [-h] [-s SRC] [-d DST] [-b BLOCK_SIZE] [-a] [-m MEDIAN_KERNEL_SIZE] [-e EDGE_SIZE] [-c CYLINDER_RADIUS] [-f {png,tif,jpg}]
+         [-i INTENSITY_FACTOR] [--mm_resolution MM_RESOLUTION] [--depth DEPTH] [--save_projection]
 
-    optional arguments:
-        -h, --help            show this help message and exit
-        -s SOURCE, --source SOURCE
-                                Indicate source directory.
-        -b BLOCK_SIZE, --block_size BLOCK_SIZE
-                                Indicate divided volume size (>= 64)
-        -a, --all_at_once     Perform all-at-onec processing
-        -m MEDIAN_KERNEL_SIZE, --median_kernel_size MEDIAN_KERNEL_SIZE
-                                Indicate median kernel size (>= 1)
-        -e EDGE_SIZE, --edge_size EDGE_SIZE
-                                Indicate blur kernel size for edge detection (>= 1)
-        -c CYLINDER_RADIUS, --cylinder_radius CYLINDER_RADIUS
-                                Indicate cylinder mask radius (>= 64). If 0, masking
-                                process will be skipped.
-        -f {png,tif,jpg}, --format {png,tif,jpg}
-                                Indicate file format type
-        -i INTENSITY_FACTOR, --intensity_factor INTENSITY_FACTOR
-                                Indicate intensity factor (>0)
+optional arguments:
+  -h, --help            show this help message and exit
+  -s SRC, --src SRC     source directory.
+  -d DST, --dst DST     destination directory.
+  -b BLOCK_SIZE, --block_size BLOCK_SIZE
+                        divided volume size (>= 64)
+  -a, --all_at_once     all-at-onec processing
+  -m MEDIAN_KERNEL_SIZE, --median_kernel_size MEDIAN_KERNEL_SIZE
+                        median kernel size (>= 1)
+  -e EDGE_SIZE, --edge_size EDGE_SIZE
+                        blur kernel size for edge detection (>= 1)
+  -c CYLINDER_RADIUS, --cylinder_radius CYLINDER_RADIUS
+                        cylinder mask radius (>= 64). If 0, masking process will be skipped.
+  -f {png,tif,jpg}, --format {png,tif,jpg}
+                        file format type
+  -i INTENSITY_FACTOR, --intensity_factor INTENSITY_FACTOR
+                        intensity factor (>0)
+  --mm_resolution MM_RESOLUTION
+                        spatial resolution [mm].
+  --depth DEPTH         depth of the maximum level to be explored. Defaults to unlimited.
+  --save_projection     save projection images.
+
 ```
 
 Basic usage of RSAvis3D is
@@ -96,26 +99,15 @@ DAS08  DAS10  DAS12  DAS14  DAS16  DAS18  DAS20  DAS22  DAS24  DAS26
 
 If you want to obtain RSA segments, please specify the target directory.
 ```
-python . -s rice_root_daily_growth_intensity_normalized
+python . -s rice_root_daily_growth_intensity_normalized --save_projection
 ```
 
 Alternatively, if your PC has enough memory space, the following command well works.
 ```
-python . -s rice_root_daily_growth_intensity_normalized -a
+python . -s rice_root_daily_growth_intensity_normalized -a --save_projection
 ```
 
-Processed files are saved in the .segmentated directory.
-
-```
-ls -a rice_root_daily_growth_intensity_normalized/.segmentated
-.                 .projection1      DAS07  DAS11  DAS15  DAS19  DAS23  DAS27
-..                .projection1.gif  DAS08  DAS12  DAS16  DAS20  DAS24
-.projection0      .projection2      DAS09  DAS13  DAS17  DAS21  DAS25
-.projection0.gif  .projection2.gif  DAS10  DAS14  DAS18  DAS22  DAS26
-```
-
-Projection images are saved in `.projection0`, `.projection1`, and `.projection2` directory. Animation gif files are saved as `.projection0.gif `, `.projection1.gif`, and `.projection2.gif`.
-
+Processed files are saved in the *rice_root_daily_growth_intensity_normalized_rsavis3d* directory.
 
 <img src="figures/.projection0.gif" width=60% height=60% title=".projection0.gif"> <img src="figures/.projection1.gif" width=60% height=60% title=".projection1.gif"><img src="figures/.projection2.gif" width=60% height=60% title=".projection2.gif">
 
@@ -152,3 +144,6 @@ https://rootomics.dna.affrc.go.jp/en/
 
 * version 1.3 (January 17, 2023)
   * rewrote the code of `normalize_intensity_inspeXio_SMX-225CT_FPD_HR.py`
+
+* version 1.4 (January 17, 2023)
+  * loading, image processing, and saving are parallelized.

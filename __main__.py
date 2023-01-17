@@ -1,76 +1,53 @@
 import argparse
 import os
-import shutil
-from dataclasses import dataclass
-from glob import glob
-from typing import List
+from multiprocessing import Process, Queue
+from pathlib import Path
 
-from PIL import Image
+import numpy as np
 from skimage import io
 
-from __module import RSAvis3D, VolumeLoader, VolumePath, VolumeSaver
 from modules.config import DESCRIPTION, logger
+from modules.rsavis3d import RSAvis3D
+from modules.volume import volume_loading_func, volume_saving_func
 
 
-@dataclass(frozen=True)
-class RSAvis3D_Parameters(object):
-    source: str
-    block_size: int
-    median_kernel_size: int
-    edge_size: int
-    cylinder_radius: int
-    all_at_once: bool
-    format: str
-    intensity_factor: int
-
-    def __post_init__(self):
-        assert os.path.isdir(self.source)
-        assert self.block_size >= 64
-        assert self.median_kernel_size > 0
-        assert self.edge_size > 0
-        assert self.cylinder_radius >= 64 or self.cylinder_radius == 0
-        assert self.intensity_factor > 0
-
-
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument(
-        "-s", "--source", type=str, help="Indicate source directory."
-    )
-
+    parser.add_argument("-s", "--src", type=str, help="source directory.")
+    parser.add_argument("-d", "--dst", type=str, help="destination directory.")
     parser.add_argument(
         "-b",
         "--block_size",
         type=int,
         default=64,
-        help="Indicate divided volume size (>= 64)",
+        help="divided volume size (>= 64)",
     )
     parser.add_argument(
         "-a",
         "--all_at_once",
         action="store_true",
-        help="Perform all-at-onec processing",
+        help="all-at-onec processing",
     )
     parser.add_argument(
         "-m",
         "--median_kernel_size",
         type=int,
         default=7,
-        help="Indicate median kernel size (>= 1)",
+        help="median kernel size (>= 1)",
     )
     parser.add_argument(
         "-e",
         "--edge_size",
         type=int,
         default=21,
-        help="Indicate blur kernel size for edge detection (>= 1)",
+        help="blur kernel size for edge detection (>= 1)",
     )
     parser.add_argument(
         "-c",
         "--cylinder_radius",
         type=int,
         default=300,
-        help="Indicate cylinder mask radius (>= 64). If 0, masking process will be skipped.",
+        help="cylinder mask radius (>= 64). If 0, masking process will be skipped.",
     )
     parser.add_argument(
         "-f",
@@ -78,134 +55,140 @@ if __name__ == "__main__":
         type=str,
         choices=("png", "tif", "jpg"),
         default="jpg",
-        help="Indicate file format type",
+        help="file format type",
     )
     parser.add_argument(
         "-i",
         "--intensity_factor",
         type=int,
         default=10,
-        help="Indicate intensity factor (>0)",
+        help="intensity factor (>0)",
     )
-
+    parser.add_argument(
+        "--mm_resolution",
+        type=float,
+        default=0.0,
+        help="spatial resolution [mm].",
+    )
+    parser.add_argument(
+        "--depth",
+        type=int,
+        default=-1,
+        help="depth of the maximum level to be explored. Defaults to unlimited.",
+    )
+    parser.add_argument(
+        "--save_projection",
+        action="store_true",
+        help="save projection images.",
+    )
     args = parser.parse_args()
 
-    if args.source is None:
+    if args.src is None:
         parser.print_help()
         exit()
 
-    source_directory: str = args.source
-    if source_directory.endswith("/") or source_directory.endswith("\\"):
-        source_directory = source_directory[:-1]
-
-    if not os.path.isdir(source_directory):
-        logger.error(f"Indicate valid directory path.")
+    root_src_dir: Path = Path(args.src).resolve()
+    if not root_src_dir.is_dir():
+        logger.error("Indicate valid virectory path.")
         exit()
 
-    rsavis3d_params = RSAvis3D_Parameters(**vars(args))
+    root_dst_dir = Path(args.dst or str(root_src_dir) + "_rsavis3d")
 
-    # // listing the target volume directories
-    volume_directory_list: List[str] = []
-    for volume_directory in sorted(
-        glob(rsavis3d_params.source + "/**/", recursive=True)
-    ):
-        if not VolumeLoader(
-            volume_directory=volume_directory
-        ).is_volume_directory():
-            continue
+    mm_resolution = float(args.mm_resolution)
+    depth = int(args.depth)
 
-        volume_directory_list.append(volume_directory)
+    volume_loading_queue = Queue()
+    volume_loading_process = Process(
+        target=volume_loading_func,
+        args=(root_src_dir, root_dst_dir, depth, volume_loading_queue, logger),
+    )
+    volume_loading_process.start()
 
-    for volume_directory in volume_directory_list:
-        destination = VolumePath(volume_directory).segmentated_volume_directory
+    volume_saving_queue = Queue()
+    volume_saving_process = Process(
+        target=volume_saving_func,
+        args=(volume_saving_queue, logger),
+    )
+    volume_saving_process.start()
 
-        volume_information_source = volume_directory + "/.volume_information"
-        volume_information_destination = destination + "/.volume_information"
+    while True:
+        (
+            volume_path,
+            np_volume,
+            volume_info,
+        ) = volume_loading_queue.get()
+        if volume_path is None:
+            break
 
-        if os.path.isdir(
-            rsavis3d_volume := VolumePath(
-                volume_directory
-            ).segmentated_volume_directory
-        ):
-            logger.error(
-                f"[skip] The RSAvis3D volume already exists: {rsavis3d_volume}"
-            )
-            continue
+        relative_path = volume_path.relative_to(root_src_dir)
 
-        if not os.path.isdir(
-            target_volume_path := VolumePath(
-                volume_directory
-            ).registrated_volume_directory
-        ):
-            target_volume_path = volume_directory
-
-        np_volume = VolumeLoader(target_volume_path).load()
-        rsavis3d = RSAvis3D(np_volume=np_volume)
-        if rsavis3d_params.cylinder_radius != 0:
-            rsavis3d.make_sylinder_mask(radius=rsavis3d_params.cylinder_radius)
-            rsavis3d.trim_with_mask(
-                padding=rsavis3d_params.median_kernel_size // 2
-            )
-        rsavis3d.apply_median3d(
-            median_kernel_size=rsavis3d_params.median_kernel_size,
-            all_at_once=rsavis3d_params.all_at_once,
-        )
-        rsavis3d.invert()
-        rsavis3d.detect_edge(intensity_factor=rsavis3d_params.intensity_factor)
-        if rsavis3d_params.cylinder_radius != 0:
-            rsavis3d.apply_mask()
-
-        np_volume = rsavis3d.get_np_volume()
-        VolumeSaver(
-            destination_directory=VolumePath(
-                volume_directory
-            ).segmentated_volume_directory,
+        logger.info(f"[processing start] {relative_path}")
+        np_volume = perform_rsavis3d(
             np_volume=np_volume,
-        ).save(extension=rsavis3d_params.format)
+            block_size=args.block_size,
+            median_kernel_size=args.median_kernel_size,
+            edge_size=args.edge_size,
+            cylinder_radius=args.cylinder_radius,
+            all_at_once=args.all_at_once,
+            intensity_factor=args.intensity_factor,
+        )
+        logger.info(f"[processing end] {relative_path}")
 
-        if os.path.isfile(volume_information_source):
-            shutil.copyfile(
-                volume_information_source, volume_information_destination
-            )
+        if mm_resolution != 0:
+            volume_info.update({"mm_resolution": mm_resolution})
 
-        destination_directory = VolumePath(
-            volume_directory
-        ).segmentated_volume_directory
+        while volume_saving_queue.qsize() == 1:
+            pass
 
-        for d in range(3):
-            projection_destination = (
-                os.path.dirname(destination) + f"/.projection{d}"
-            )
-            os.makedirs(projection_destination, exist_ok=True)
-            projection = np_volume.max(axis=d)
-            io.imsave(
-                f"{projection_destination}/{os.path.basename(destination)}.{rsavis3d_params.format}",
-                projection,
-            )
-
-    # // making gif animation
-    for volume_directory in volume_directory_list:
-        destination = VolumePath(volume_directory).segmentated_volume_directory
-        for d in range(3):
-            animation_gif_file = (
-                os.path.dirname(destination) + f"/.projection{d}.gif"
-            )
-            if os.path.isfile(animation_gif_file):
-                continue
-            img_file_list = sorted(
-                glob(
-                    os.path.join(
-                        os.path.dirname(destination) + f"/.projection{d}",
-                        f"*.*",
-                    )
+        dst_path = Path(root_dst_dir, relative_path)
+        if args.save_projection:
+            os.makedirs(dst_path)
+            for i in range(3):
+                projection = np_volume.max(axis=i)
+                io.imsave(
+                    Path(
+                        root_dst_dir, f"projection{i}_{volume_path.name}.jpg"
+                    ),
+                    projection,
                 )
-            )
-            if len(img_file_list) > 1:
-                imgs = [Image.open(f) for f in img_file_list]
-                imgs[0].save(
-                    animation_gif_file,
-                    save_all=True,
-                    append_images=imgs[1:],
-                    duration=300,
-                    loop=0,
-                )
+
+        volume_saving_queue.put(
+            (dst_path, root_dst_dir, np_volume, volume_info)
+        )
+
+    volume_saving_queue.put((None, None, None, None))
+
+
+def perform_rsavis3d(
+    np_volume: np.ndarray,
+    block_size: int,
+    median_kernel_size: int,
+    edge_size: int,
+    cylinder_radius: int,
+    all_at_once: bool,
+    intensity_factor: int,
+):
+    rsavis3d = RSAvis3D(np_volume=np_volume)
+    if cylinder_radius != 0:
+        rsavis3d.make_sylinder_mask(radius=cylinder_radius)
+        rsavis3d.trim_with_mask(padding=median_kernel_size // 2)
+    rsavis3d.apply_median3d(
+        block_size=block_size,
+        median_kernel_size=median_kernel_size,
+        all_at_once=all_at_once,
+    )
+    rsavis3d.invert()
+    rsavis3d.detect_edge(
+        kernel_size=edge_size,
+        intensity_factor=intensity_factor,
+    )
+    if cylinder_radius != 0:
+        rsavis3d.apply_mask()
+
+    np_volume = rsavis3d.get_np_volume()
+
+    return np_volume
+
+
+if __name__ == "__main__":
+    main()
