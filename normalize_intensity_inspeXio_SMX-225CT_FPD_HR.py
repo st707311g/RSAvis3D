@@ -1,5 +1,6 @@
 import argparse
 import logging
+import re
 from multiprocessing import Process, Queue
 from pathlib import Path
 
@@ -103,7 +104,9 @@ if __name__ == "__main__":
         while volume_saving_queue.qsize() == 1:
             pass
 
-        dst_path = Path(root_dst_dir, relative_path)
+        dst_path = Path(
+            root_dst_dir, re.sub(r"_cb_\d{3}$", "", str(relative_path))
+        )
         volume_saving_queue.put(
             (dst_path, root_dst_dir, np_volume, volume_info)
         )
