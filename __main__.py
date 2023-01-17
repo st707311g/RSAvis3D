@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 from skimage import io
 
+from modules import config
 from modules.config import DESCRIPTION, logger
 from modules.rsavis3d import RSAvis3D
 from modules.volume import volume_loading_func, volume_saving_func
@@ -81,7 +82,14 @@ def main():
         action="store_true",
         help="save projection images.",
     )
+    parser.add_argument(
+        "--using_gpu_number",
+        type=int,
+        default=1,
+        help="GPU number used for computing (>1)",
+    )
     args = parser.parse_args()
+    config.using_gpu_number = int(args.using_gpu_number)
 
     if args.src is None:
         parser.print_help()
