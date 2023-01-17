@@ -1,125 +1,113 @@
 import argparse
-import json
-import os
-from dataclasses import dataclass
-from glob import glob
+import logging
+from multiprocessing import Process, Queue
 from pathlib import Path
 
 import numpy as np
-from attr import field
-from skimage import exposure, filters, io
+from skimage import exposure, filters
 
-from __common import logger, tqdm
-from __module import VolumeInformation, VolumeLoader
+from modules.config import logger
+from modules.volume import volume_loading_func, volume_saving_func
 
 
-@dataclass(frozen=True)
-class IntensityNormalizer(object):
-    volume: np.ndarray
+def normalize_intensity(
+    np_volume: np.ndarray, relative_path: Path, logger: logging.Logger
+):
+    logger.info(f"[processing start] {relative_path}")
+    nstack = len(np_volume)
+    stack: np.ndarray = np_volume[nstack // 2 - 16 : nstack // 2 + 16]
 
-    def run(self, block_size=256, all_at_once = True) -> np.ndarray:
-        np_volume = self.volume
+    hist_y, hist_x = exposure.histogram(stack[stack > 0])
+    thr = filters.threshold_otsu(stack[stack > 0])
 
-        nstack = len(np_volume)
-        stack: np.ndarray = np_volume[nstack//2-16:nstack//2+16]
-        
-        hist_y, hist_x = exposure.histogram(stack[stack>0])
-        thr = filters.threshold_otsu(stack[stack>0])
-        
-        peak_air = np.argmax(hist_y[hist_x<thr])+hist_x[0]
-        peak_soil = np.argmax(hist_y[hist_x>thr])+(thr-hist_x[0])+hist_x[0]
-        diff = peak_soil-peak_air
-        
-        logger.info(f'Intensity Normalization: Air: {peak_air}, Soil: {peak_soil}, diff: {diff}')
+    peak_air = np.argmax(hist_y[hist_x < thr]) + hist_x[0]
+    peak_soil = np.argmax(hist_y[hist_x > thr]) + (thr - hist_x[0]) + hist_x[0]
 
-        maxid = [peak_air, peak_soil]
-        maxid = [i-hist_x[0] for i in maxid]
+    np_volume = np_volume.astype(np.int64)
+    for i in range(len(np_volume)):
+        np_volume[i] = (
+            (np_volume[i] - peak_air).clip(0)
+            / (peak_soil - peak_air)
+            * 256
+            / 2
+        )
+    logger.info(f"[processing end] {relative_path}")
+    return exposure.rescale_intensity(
+        np_volume, in_range=(0, 255), out_range=(0, 255)
+    ).astype(np.uint8)
 
-        np_volume = np.array(np_volume, dtype=np.float32)
-        for i in tqdm(range(len(np_volume))):
-            img = np_volume[i]
-            np_volume[i] = (img - peak_air).clip(0)/(peak_soil-peak_air)*256/2
 
-        return np.array(exposure.rescale_intensity(np_volume, in_range=(0,255), out_range=(0,255)), dtype=np.uint8) #type: ignore
-
-@dataclass
-class CommandParameters(object):
-    source: str = field(init=False)
-    destination: str = field(init=False)
-
-    def __init__(self, args):
-        assert args.source is not None
-        self.source = args.source
-
-        if self.source.endswith('/') or self.source.endswith('\\'):
-            self.source = self.source[:-1]
-
-        if args.destination is not None:
-            self.destination = args.destination
-        else:
-            self.destination = self.source+'_intensity_normalized'
-
-        if self.destination.endswith('/') or self.destination.endswith('\\'):
-            self.destination = self.destination[:-1]
-
-    def __post_init__(self):
-        assert self.source != self.destination
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Intensity Normalizer') 
-    parser.add_argument('-s', '--source', type=str, help='Source directory.')
-    parser.add_argument('-d', '--destination', type=str, help='Destination directory.')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Intensity Normalizer")
+    parser.add_argument("-s", "--src", type=str, help="source directory.")
+    parser.add_argument("-d", "--dst", type=str, help="destination directory.")
+    parser.add_argument(
+        "--mm_resolution",
+        type=float,
+        default=0.0,
+        help="spatial resolution [mm].",
+    )
+    parser.add_argument(
+        "--depth",
+        type=int,
+        default=-1,
+        help="depth of the maximum level to be explored. Defaults to unlimited.",
+    )
 
     args = parser.parse_args()
-    if args.source is None:
+    if args.src is None:
         parser.print_help()
         exit(0)
 
-    source_directory: str = args.source
-    if source_directory.endswith('/') or source_directory.endswith('\\'):
-        source_directory = source_directory[:-1]
-    
-    if not os.path.isdir(source_directory):
-        logger.error(f'Indicate valid virectory path.')
+    root_src_dir: Path = Path(args.src).resolve()
+    if not root_src_dir.is_dir():
+        logger.error("Indicate valid virectory path.")
         exit()
 
+    root_dst_dir = Path(
+        args.dst or str(root_src_dir) + "_intensity_normalized"
+    )
 
-    destination_directory = args.destination if args.destination is not None else source_directory+'_intensity_normalized'
-    if destination_directory.endswith('/') or destination_directory.endswith('\\'):
-        destination_directory = destination_directory[:-1]
+    mm_resolution = float(args.mm_resolution)
+    depth = int(args.depth)
 
-    if os.path.isdir(destination_directory):
-        logger.info(f'The distination directory already exists. Do you want to overwrite it? {destination_directory}')
-        while(True):
-            inp=input('y/n? >> ')
-            if inp == 'y':
-                break
-            if inp == 'n':
-                exit(1)
+    if depth < 0:
+        arg_depth = {}
+    else:
+        arg_depth = {"depth": depth}
 
-    volume_directory_list = sorted(glob(source_directory+'/**/', recursive=True))
-    volume_directory_list = [volume_directory for volume_directory in volume_directory_list if VolumeLoader(volume_directory).is_volume_directory()]
+    volume_loading_queue = Queue()
+    volume_loading_process = Process(
+        target=volume_loading_func,
+        args=(root_src_dir, root_dst_dir, depth, volume_loading_queue, logger),
+    )
+    volume_loading_process.start()
 
-    if len(volume_directory_list) == 0:
-        logger.info(f'There are no directories to be processed.')
-        exit()
+    volume_saving_queue = Queue()
+    volume_saving_process = Process(
+        target=volume_saving_func,
+        args=(volume_saving_queue, logger),
+    )
+    volume_saving_process.start()
 
-    for volume_directory in volume_directory_list:
-        relative_path = Path(volume_directory).relative_to(source_directory)
-        final_destination_directory = os.path.join(destination_directory, relative_path)
-        if os.path.isdir(final_destination_directory):
-            logger.info(f'[skip] {volume_directory}')
-            continue
+    while True:
+        (
+            volume_path,
+            np_volume,
+            volume_info,
+        ) = volume_loading_queue.get()
+        if volume_path is None:
+            break
 
-        volume = VolumeLoader(volume_directory).load()
-        normalized_volume = IntensityNormalizer(volume=volume).run()
+        relative_path = volume_path.relative_to(root_src_dir)
+        np_volume = normalize_intensity(np_volume, relative_path, logger)
 
-        logger.info(f'Saving {len(normalized_volume)} image files: {final_destination_directory}')
-        os.makedirs(final_destination_directory, exist_ok=True)
-        for i, img in enumerate(tqdm(normalized_volume)):
-            out_fname = os.path.join(final_destination_directory, f'img{str(i).zfill(4)}.jpg')
-            io.imsave(out_fname, img)
+        while volume_saving_queue.qsize() == 1:
+            pass
 
-        information = VolumeInformation(volume_directory=volume_directory).get()
-        with open(final_destination_directory+'/.volume_information', 'w') as f:
-            json.dump(information, f)
+        dst_path = Path(root_dst_dir, relative_path)
+        volume_saving_queue.put(
+            (dst_path, root_dst_dir, np_volume, volume_info)
+        )
+
+    volume_saving_queue.put((None, None, None, None))

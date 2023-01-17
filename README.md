@@ -3,12 +3,12 @@
 
 ![python](https://img.shields.io/badge/Python-3.8.12-lightgreen)
 ![developed_by](https://img.shields.io/badge/developed%20by-Shota_Teramoto-lightgreen)
-![version](https://img.shields.io/badge/version-1.2-lightgreen)
-![last_updated](https://img.shields.io/badge/last_update-June_15,_2022-lightgreen)
+![version](https://img.shields.io/badge/version-1.3-lightgreen)
+![last_updated](https://img.shields.io/badge/last_update-January_17,_2023-lightgreen)
 
-![top image](figures/top_image.jpg) 
+![top image](figures/top_image.jpg)
 
-RSAvis3D is the Python program for root segmentation from X-ray CT images. RSAvis3D uses a 3D median filter and edge detection algorithm to isolate root segments. 
+RSAvis3D is the Python program for root segmentation from X-ray CT images. RSAvis3D uses a 3D median filter and edge detection algorithm to isolate root segments.
 
 ## system requirements
 
@@ -129,23 +129,6 @@ Please cite the following article:
 
 Shota Teramoto et al. (2020) [High-throughput three-dimensional visualization of root system architecture of rice using X-ray computed tomography.](https://doi.org/10.1186/s13007-020-00612-6)  Plant Methods. 16, Article number: 66
 
-## license
-
-NARO NON-COMMERCIAL LICENSE AGREEMENT Version 1.0
-
-This license is for 'Non-Commercial' use of software for RASvis3D
-
-* Scientific use of RASvis3D is permitted free of charge.
-* Modification of RASvis3D is only permitted to the person of downloaded and his/her colleagues.
-* The National Agriculture and Food Research Organization (hereinafter referred to as NARO) does not guarantee that defects, errors or malfunction will not occur with respect to RASvis3D.
-* NARO shall not be responsible or liable for any damage or loss caused or be alleged to be caused, directly or indirectly, by the download and use of RASvis3D.
-* NARO shall not be obligated to correct or repair the program regardless of the extent, even if there are any defects of malfunctions in RASvis3D.
-* The copyright and all other rights of RASvis3D belong to NARO.
-* Selling, renting, re-use of license, or use for business purposes etc. of RASvis3D shall not be allowed. For commercial use, license of commercial use is required. Inquiries for such commercial license are directed to NARO.
-* The RASvis3D may be changed, or the distribution maybe canceled without advance notification.
-*In case the result obtained using RASvis3D in used for publication in academic journals etc., please refer the publication of RASvis3D and/or acknowledge the use of RASvis3D in the publication.
-
-Copyright (C) 2020 National Agriculture and Food Research Organization. All rights reserved.
 
 ## project homepage
 https://rootomics.dna.affrc.go.jp/en/
@@ -153,16 +136,19 @@ https://rootomics.dna.affrc.go.jp/en/
 ## update history
 
 * version 1.0 (Dec 10, 2020)
-  * Initial version uploaded
+  * initial version uploaded
   * README.md updated (Jan 29th, 2021)
 
 * version 1.1 (May 25, 2022)
   * GPU support
-  * License change (NARO NON-COMMERCIAL LICENSE AGREEMENT Version 1.0)
-  * Rewrote the code for python 3.8.12
+  * license change (NARO NON-COMMERCIAL LICENSE AGREEMENT Version 1.0)
+  * rewrote the code for python 3.8.12
   * fix: typo (June 1, 2022)
   * fix: warning messages ignored (June 9, 2022)
   * add: README.md - an explanation of the intensity factor (June 9, 2022)
 
 * version 1.2 (June 15, 2022)
-  * Added option of no mask processing
+  * added option of no mask processing
+
+* version 1.3 (January 17, 2023)
+  * rewrote the code of `normalize_intensity_inspeXio_SMX-225CT_FPD_HR.py`
