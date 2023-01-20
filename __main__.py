@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 from multiprocessing import Process, Queue
 from pathlib import Path
@@ -104,6 +105,7 @@ def main():
 
     mm_resolution = float(args.mm_resolution)
     depth = int(args.depth)
+    depth = depth if depth > 0 else math.inf
 
     volume_loading_queue = Queue()
     volume_loading_process = Process(
@@ -155,7 +157,8 @@ def main():
                 projection = np_volume.max(axis=i)
                 io.imsave(
                     Path(
-                        root_dst_dir, f"projection{i}_{volume_path.name}.jpg"
+                        dst_path.parent,
+                        f"projection{i}_{volume_path.name}.jpg",
                     ),
                     projection,
                 )
