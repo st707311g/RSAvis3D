@@ -5,6 +5,7 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from queue import Queue
 
 
 class encoder(json.JSONEncoder):
@@ -27,7 +28,7 @@ class _RSA_DatasetConfig:
         return Path(self.path, ".volume_info.json")
 
 
-class RSA_Dataset(object):
+class RSA_Dataset:
     def __init__(self, path: str | Path):
         self._config = _RSA_DatasetConfig(path=Path(path))
         self._id_set: set[int] = set()
@@ -60,7 +61,9 @@ class RSA_Dataset(object):
 
     def create_new_series(self, series_name: str, suffix: str = ""):
         id_ = self._next_id
-        next_path = Path(self._config.path, f"{id_:02}_{series_name}").with_suffix(suffix)
+        next_path = Path(self._config.path, f"{id_:02}_{series_name}").with_suffix(
+            suffix
+        )
 
         self._name_map.update({series_name: next_path})
         self._id_set.add(int(id_))
@@ -90,7 +93,9 @@ class RSA_Dataset(object):
 
         vol_info = self.load_volume_info()
         vol_info.update(additional_info)
-        self._config.volume_info_path.write_text(json.dumps(vol_info, indent=2, cls=encoder))
+        self._config.volume_info_path.write_text(
+            json.dumps(vol_info, indent=2, cls=encoder)
+        )
 
     def update_log(self, additional_info: dict):
         if self._config.log_path is None:
@@ -102,30 +107,34 @@ class RSA_Dataset(object):
 
 
 def walk_to_find_rsa_dataset(
-    root_dir: str | Path,
-    series_include: list[str] = ["ct"],
-    series_exclude: list[str] = None,
-    src_dir: str | Path = None,
+    initial_search_dir: str | Path,
+    series_include: list[str] | tuple[str] = ("ct"),
+    series_exclude: list[str] | tuple[str] = (),
 ):
-    root_dir = Path(root_dir)
-    src_dir = src_dir or root_dir
+    initial_search_dir = Path(initial_search_dir)
 
-    dataset = RSA_Dataset(src_dir)
+    queue: Queue[Path] = Queue()
+    queue.put(initial_search_dir)
 
-    if series_exclude is not None:
-        for series_ in series_exclude:
-            if dataset.does_contain(series_):
-                yield dataset, True
-                return
+    while not queue.empty():
+        target_dir = queue.get()
+        rsa_dataset = RSA_Dataset(target_dir)
 
-    is_target = True
-    for series_ in series_include:
-        is_target &= dataset.does_contain(series_)
+        is_target = True
+        for series_name in series_exclude:
+            if rsa_dataset.does_contain(series_name):
+                is_target = False
+                break
+        if is_target is False:
+            yield rsa_dataset, True
+            continue
 
-    if is_target:
-        yield dataset, False
-        return
+        for series_name in series_include:
+            is_target &= rsa_dataset.does_contain(series_name)
 
-    for d in sorted(Path(src_dir).glob("*/")):
-        if d.is_dir():
-            yield from walk_to_find_rsa_dataset(root_dir, series_include, series_exclude, d)
+        if is_target:
+            yield rsa_dataset, False
+            continue
+
+        for d in sorted(target_dir.glob("*/")):
+            queue.put(d)
