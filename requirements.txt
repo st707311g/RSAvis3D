@@ -1,5 +1,0 @@
-coloredlogs
-cupy
-numpy
-scikit-image
-opencv-python

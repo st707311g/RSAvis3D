@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import logging
 import warnings
 import zipfile
@@ -8,21 +7,22 @@ from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Annotated, Literal
 
 import coloredlogs
 import numpy as np
+import typer
 from skimage import io
 
-from st_modules import config
-from st_modules.config import logger
-from st_modules.rsa_dataset import RSA_Dataset, walk_to_find_rsa_dataset
+from st_modules.rsa_dataset import walk_to_find_rsa_dataset
 from st_modules.volume import VolumeData
 
 warnings.simplefilter("ignore")
+logger = logging.getLogger(Path(__file__).name)
 
 
 @dataclass
-class ProjectionMaker(object):
+class ProjectionMaker:
     _src_path: Path
     _dst_path: Path
     _label: str = None
@@ -82,76 +82,55 @@ class ProjectionMaker(object):
             pass
 
 
-@dataclass
-class Args:
-    src: Path
-    axis: str
-    series_src: str
-    debug: bool
-
-    @property
-    def series_dst(self):
-        return f"{self.series_src}_projection_{self.axis}"
-
-
-def main():
-    parser = argparse.ArgumentParser(description=config.DESCRIPTION)
-    parser.add_argument(
-        "--src",
-        type=Path,
-        required=True,
-        help="source directory",
-    )
-    parser.add_argument(
+def main(
+    search_dir: Annotated[
+        Path,
+        typer.Argument(help="Indicate search directory."),
+    ],
+    axis: Literal["x", "y", "z"] = typer.Option(
+        "x",
         "--axis",
-        choices=["z", "y", "x"],
-        type=str,
-        required=True,
-        help="projection is created along the axis",
-    )
-    parser.add_argument(
-        "--series_src",
-        type=str,
-        default="rsavis3d",
-        help="series name in the RSA dataset, which is used to make projection.",
-    )
-    parser.add_argument(
+        help="Indicate format type of saving image file.",
+    ),
+    series_src: str = typer.Option(
+        "rsavis3d",
+        "--series-src",
+        help="Indicate series name in the RSA dataset, which will be processed.",
+    ),
+    debug_mode: bool = typer.Option(
+        False,
         "--debug",
-        action="store_true",
-        help="debug mode.",
-    )
-
-    args = Args(**parser.parse_args().__dict__)
-
-    if args.debug:
+        "-D",
+        help="Launch in debug mode.",
+    ),
+):
+    if debug_mode:
         coloredlogs.install(level=logging.DEBUG, logger=logger)
+        logger.debug(f"{search_dir=}, {format=}, {series_src=}, {debug_mode=}")
     else:
         coloredlogs.install(level=logging.INFO, logger=logger)
 
-    logger.debug(args.__dict__)
-
-    if not args.src.exists():
-        logger.error("indicate valid path.")
+    if not search_dir.exists():
+        logger.error(f"Indicate valid path: {search_dir}")
         exit()
 
-    for dataset, skipped in walk_to_find_rsa_dataset(args.src, [args.series_src], [args.series_dst]):
-        relative_path = dataset._config.path.relative_to(args.src)
+    series_dst = f"{series_src}_projection_{axis}"
+
+    for dataset, skipped in walk_to_find_rsa_dataset(
+        search_dir, [series_src], [series_dst]
+    ):
+        relative_path = dataset._config.path.relative_to(search_dir)
         logger.info(f"{relative_path=}")
         if skipped:
             logger.info("skipped")
             continue
 
-        proceed(dataset, relative_path, args)
-
-
-def proceed(dataset: RSA_Dataset, relative_path: Path, args: Args):
-    dst_path = dataset.create_new_series(args.series_dst, ".jpg")
-    ProjectionMaker(
-        _src_path=dataset.get_series_path(args.series_src),
-        _dst_path=dst_path,
-        _label="making projetion",
-    ).run(axis=args.axis)
+        ProjectionMaker(
+            _src_path=dataset.get_series_path(series_src),
+            _dst_path=dataset.create_new_series(series_dst, ".jpg"),
+            _label="making projetion",
+        ).run(axis=axis)
 
 
 if __name__ == "__main__":
-    main()
+    typer.run(main)
