@@ -1,0 +1,15 @@
+[project]
+name = "rsavis3d"
+version = "1.7.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "coloredlogs>=15.0.1",
+    "ndimagetools",
+    "scikit-image>=0.26.0",
+    "typer>=0.21.1",
+]
+
+[tool.uv.sources]
+ndimagetools = { git = "https://github.com/chatalympics/ndimagetools.git", tag = "v0.1.0" }

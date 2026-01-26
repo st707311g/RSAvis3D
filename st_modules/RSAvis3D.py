@@ -1,21 +1,22 @@
 import shutil
 import warnings
 import zipfile
-from functools import cache, cached_property, lru_cache, reduce
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from functools import cached_property, lru_cache, reduce
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-import cv2
 import numpy as np
+from ndimagetools.filter import jit8bit_3d_median_filter as jit_median_filter
+from scipy.ndimage import uniform_filter
 from skimage import io, util
 
-from .multi_threading import ForEach, MultiThreading, MultiThreadingGPU
 from .volume import VolumeData
 
 warnings.simplefilter("ignore")
 
 
-class RSAvis3D(object):
+class RSAvis3D:
     def __init__(
         self,
         src_path: str | Path,
@@ -24,7 +25,6 @@ class RSAvis3D(object):
         block_size: int = 64,
         overlap: int = 8,
         label: str = None,
-        using_gpu_ids: list[int] = None,
     ):
         self.src_path = Path(src_path)
         self.dst_path = Path(dst_path)
@@ -33,7 +33,6 @@ class RSAvis3D(object):
         self._block_size = block_size
         self._overlap = overlap
         self._label = label
-        self._using_gpu_ids = using_gpu_ids
 
         if self.src_path.is_dir():
             self.volume_path = Path(self.src_path)
@@ -47,6 +46,8 @@ class RSAvis3D(object):
         self.image_file_number = len(self.image_file_names)
 
         self.print_callback_i = 0
+
+        self.__get_layer_cache: dict[int, np.ndarray] = {}
 
     def print_callback(self, i: int, total: int, label="processing"):
         percent = round(i * 100 / self.block_count_total, 1)
@@ -63,8 +64,9 @@ class RSAvis3D(object):
 
         self.print_callback_i += 1
 
-    @cache
-    def get_cylinder_mask(self, layer_shape: tuple[int], radius: int):
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def get_cylinder_mask(layer_shape: tuple[int], radius: int):
         assert radius > 0
 
         x, y = np.indices((layer_shape[1], layer_shape[2]))
@@ -73,7 +75,13 @@ class RSAvis3D(object):
 
         return mask
 
-    def run(self, median_kernel_size=7, edge_size=21, cylinder_radius: int = None, intensity_factor=10.0):
+    def run(
+        self,
+        median_kernel_size=7,
+        edge_size=21,
+        cylinder_radius: int = None,
+        intensity_factor=10.0,
+    ):
         temp_dst_dir = TemporaryDirectory()
         temp_dst_file_index = 0
 
@@ -84,18 +92,23 @@ class RSAvis3D(object):
             if len(blocks) != self.block_count[1] * self.block_count[2]:
                 continue
 
-            if self._using_gpu_ids is None:
-                from scipy.ndimage import median_filter
+            with ProcessPoolExecutor() as executor:
+                futures = []
+                for block in blocks:
+                    futures.append(
+                        executor.submit(
+                            jit_median_filter,
+                            block,
+                            median_kernel_size,
+                        )
+                    )
 
-                with MultiThreading() as mt:
-                    blocks = mt.run([ForEach(blocks), median_kernel_size], median_filter, callback=self.print_callback_)
-            else:
-                from cupyx.scipy.ndimage import median_filter
+                blocks = []
+                for future in futures:
+                    blocks.append(future.result())
+                    self.print_callback_()
 
-                with MultiThreadingGPU(gpu_ids=self._using_gpu_ids) as mt:
-                    blocks = mt.run([ForEach(blocks), median_kernel_size], median_filter, callback=self.print_callback_)
-
-            self.get_layer.cache_clear()
+            self.__get_layer_cache.clear()
             layer = self.assemble_blocks_to_get_layer(blocks)
             blocks.clear()
 
@@ -103,21 +116,30 @@ class RSAvis3D(object):
             layer = self.detect_edge(layer, edge_size, intensity_factor)
             layer = layer[:, 0 : self.shape[1], 0 : self.shape[2]]
 
-            if cylinder_radius is not None:
+            if cylinder_radius != 0:
                 layer *= self.get_cylinder_mask(layer.shape, cylinder_radius)
 
             dst_file_list = []
             max_i = -1
-            for i_, slice_ in enumerate(layer):
+            for i_ in range(len(layer)):
                 if 0 <= temp_dst_file_index < self.shape[0]:
-                    dst_file = Path(temp_dst_dir.name, f"img_{temp_dst_file_index:04}.{self.dst_file_type}")
+                    dst_file = Path(
+                        temp_dst_dir.name,
+                        f"img_{temp_dst_file_index:04}.{self.dst_file_type}",
+                    )
                     dst_file_list.append(dst_file)
                     max_i = i_ if i_ > max_i else max_i
 
                 temp_dst_file_index += 1
 
-            with MultiThreading() as mt:
-                mt.run([ForEach(dst_file_list), ForEach(layer[0 : max_i + 1])], io.imsave)
+            with ThreadPoolExecutor() as executor:
+                futures = []
+                for f, s in zip(dst_file_list, layer[0 : max_i + 1], strict=True):
+                    futures.append(executor.submit(io.imsave, f, s))
+
+                blocks = []
+                for future in futures:
+                    future.result()
 
         if str(self.dst_path).endswith(".zip"):
             with zipfile.ZipFile(self.dst_path, "w", zipfile.ZIP_STORED) as zf:
@@ -133,21 +155,23 @@ class RSAvis3D(object):
     def detect_edge(self, np_ary: np.ndarray, kernel_size=21, intensity_factor=1.0):
         def fun(img: np.ndarray):
             img = img.astype(np.int16)
+            blurred_img = uniform_filter(img, size=(kernel_size, kernel_size))
 
-            blurred_img = cv2.blur(
-                img,
-                ksize=(kernel_size, kernel_size),
-            )
             blurred_img = np.asarray(blurred_img, dtype=np.int16)
             edge_img = (img - blurred_img) * intensity_factor
             edge_img = edge_img.clip(0, 255).astype(np.uint8)
             return edge_img
 
-        with MultiThreading() as mt:
-            return np.asarray(mt.run([ForEach(np_ary)], fun))
+        with ThreadPoolExecutor() as executor:
+            res_ary = np.array(list(executor.map(fun, np_ary)))
+
+        return res_ary
 
     def assemble_blocks_to_get_layer(self, blocks):
-        np_vol = np.zeros((self._block_size - self._overlap * 2,) + self.shape_with_block_unit[1:], dtype=np.uint8)
+        np_vol = np.zeros(
+            (self._block_size - self._overlap * 2,) + self.shape_with_block_unit[1:],
+            dtype=np.uint8,
+        )
 
         i = 0
         for yi in range(self.block_count[1]):
@@ -169,47 +193,66 @@ class RSAvis3D(object):
     def _inner_size(self):
         return self._block_size - self._overlap * 2
 
-    @lru_cache(maxsize=1)
     def get_layer(self, layer_index: int):
-        indexes = [
-            i
-            for i in range(
+        if layer_index in self.__get_layer_cache:
+            return self.__get_layer_cache[layer_index]
+
+        indexes = list(
+            range(
                 layer_index * self._inner_size - self._overlap,
                 (layer_index + 1) * self._inner_size + self._overlap,
             )
-        ]
+        )
+
         indexes = [i if i >= 0 else -i for i in indexes]
-        indexes = [i if i < self.image_file_number else self.image_file_number * 2 - i - 2 for i in indexes]
+        indexes = [
+            i if i < self.image_file_number else self.image_file_number * 2 - i - 2
+            for i in indexes
+        ]
 
         self.prev_indexes = indexes.copy()
 
         img_files = [self.image_file_names[i] for i in indexes]
 
-        with MultiThreading() as mt:
-            layer = np.asarray(mt.run([ForEach(img_files)], io.imread))
+        with ThreadPoolExecutor() as executor:
+            layer = np.array(list(executor.map(io.imread, img_files)))
 
         pad_size = [(0, 0)]
         for s in self.shape[1:]:
-            pad_size.append((self._overlap, self._inner_size * ((s + self._inner_size - 1) // self._inner_size) - s + self._overlap))
+            pad_size.append(
+                (
+                    self._overlap,
+                    self._inner_size * ((s + self._inner_size - 1) // self._inner_size)
+                    - s
+                    + self._overlap,
+                )
+            )
 
         layer = np.pad(layer, pad_size, mode="reflect")
 
+        self.__get_layer_cache[layer_index] = layer
         return layer
 
     def get_block(self, block_index):
         assert block_index < self.block_count_total
 
-        layer_index = int(np.floor(block_index / (self.block_count[1] * self.block_count[2])))
+        layer_index = int(
+            np.floor(block_index / (self.block_count[1] * self.block_count[2]))
+        )
         layer = self.get_layer(layer_index)
 
-        block_index = block_index - layer_index * self.block_count[1] * self.block_count[2]
+        block_index = (
+            block_index - layer_index * self.block_count[1] * self.block_count[2]
+        )
         x_index = block_index % self.block_count[1]
         y_index = block_index // self.block_count[1]
 
         return layer[
             :,
-            y_index * self._inner_size : (y_index + 1) * self._inner_size + self._overlap * 2,
-            x_index * self._inner_size : (x_index + 1) * self._inner_size + self._overlap * 2,
+            y_index * self._inner_size : (y_index + 1) * self._inner_size
+            + self._overlap * 2,
+            x_index * self._inner_size : (x_index + 1) * self._inner_size
+            + self._overlap * 2,
         ]
 
     @cached_property
@@ -219,11 +262,19 @@ class RSAvis3D(object):
 
     @cached_property
     def shape_with_block_unit(self):
-        return tuple([self._inner_size * ((s + self._inner_size - 1) // self._inner_size) for s in self.shape])
+        return tuple(
+            [
+                self._inner_size * ((s + self._inner_size - 1) // self._inner_size)
+                for s in self.shape
+            ]
+        )
 
     @cached_property
     def block_count(self):
-        return [int(np.ceil(it / (self._block_size - self._overlap * 2))) for it in self.shape]
+        return [
+            int(np.ceil(it / (self._block_size - self._overlap * 2)))
+            for it in self.shape
+        ]
 
     @cached_property
     def block_count_total(self):

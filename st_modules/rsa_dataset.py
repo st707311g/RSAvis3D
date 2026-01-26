@@ -39,7 +39,10 @@ class RSA_Dataset:
                 continue
 
             suffix = "".join(p.suffixes)
-            name = p.name[: -len(suffix)]
+            if len(suffix) == 0:
+                name = p.name
+            else:
+                name = p.name[: -len(suffix)]
 
             matched = re.findall("^([0-9]{2})_(.*)", name)
             if len(matched) != 1:
